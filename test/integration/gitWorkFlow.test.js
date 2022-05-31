@@ -1,25 +1,20 @@
-import './__mocks__/resolveConfig.js'
-
 import path from 'node:path'
 
-import { jest as jestGlobals } from '@jest/globals'
+import { jest } from '@jest/globals'
 
-import { writeFile } from '../../lib/file.js'
 import { GitWorkflow } from '../../lib/gitWorkflow.js'
 import { getInitialState } from '../../lib/state.js'
 
 import { normalizeWindowsNewlines } from './__utils__/normalizeWindowsNewlines.js'
 import { withGitIntegration } from './__utils__/withGitIntegration.js'
 
-jestGlobals.mock('../../lib/file.js', () => {
-  return {
-    // notice `jestGlobals` vs `jest` here... this will be changed with `jest.unstable_mockModule`
-    writeFile: jest.fn(() => Promise.resolve()),
-  }
-})
+jest.unstable_mockModule('../../lib/file.js', () => ({
+  writeFile: jest.fn(() => Promise.resolve()),
+}))
+const { writeFile } = await import('../../lib/file.js')
 
-jestGlobals.setTimeout(20000)
-jestGlobals.retryTimes(2)
+jest.setTimeout(20000)
+jest.retryTimes(2)
 
 describe('gitWorkflow', () => {
   describe('prepare', () => {

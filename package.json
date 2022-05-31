@@ -28,8 +28,8 @@
   ],
   "scripts": {
     "lint": "eslint .",
-    "test": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest --coverage",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest --watch"
   },
   "dependencies": {
     "cli-truncate": "^3.1.0",
@@ -50,9 +50,8 @@
     "@babel/core": "^7.18.2",
     "@babel/eslint-parser": "^7.18.2",
     "@babel/preset-env": "^7.18.2",
-    "babel-jest": "^28.1.0",
-    "babel-plugin-transform-imports": "2.0.0",
     "consolemock": "^1.1.0",
+    "cross-env": "7.0.3",
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",

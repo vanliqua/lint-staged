@@ -1,5 +1,3 @@
-import './__mocks__/resolveConfig.js'
-
 import path from 'node:path'
 
 import { jest } from '@jest/globals'
@@ -31,16 +29,33 @@ describe('lint-staged', () => {
   )
 
   test(
-    'not care about staged file outside current cwd without any other staged files',
+    'does not care about staged file outside current cwd without any other staged files',
     withGitIntegration(async ({ cwd, execGit, gitCommit, readFile, writeFile }) => {
       await writeFile('file.js', uglyJS)
       await writeFile('deeper/.lintstagedrc.json', JSON.stringify(prettierWrite))
       await execGit(['add', '.'])
 
       // Run lint-staged in "deeper/""
-      await expect(gitCommit({ cwd: path.join(cwd, 'deeper') })).resolves.toMatch(
+      await expect(gitCommit(undefined, path.join(cwd, 'deeper'))).resolves.toMatch(
         `No staged files match any configured task`
       )
+
+      // File outside deeper/ was not fixed
+      expect(await readFile('file.js')).toEqual(uglyJS)
+    })
+  )
+
+  test(
+    'does not print to console when quiet',
+    withGitIntegration(async ({ cwd, execGit, gitCommit, readFile, writeFile }) => {
+      await writeFile('file.js', uglyJS)
+      await writeFile('deeper/.lintstagedrc.json', JSON.stringify(prettierWrite))
+      await execGit(['add', '.'])
+
+      // Run lint-staged in "deeper/""
+      await expect(
+        gitCommit({ lintStaged: { quiet: true } }, path.join(cwd, 'deeper'))
+      ).resolves.toEqual('')
 
       // File outside deeper/ was not fixed
       expect(await readFile('file.js')).toEqual(uglyJS)

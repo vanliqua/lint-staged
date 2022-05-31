@@ -1,27 +1,13 @@
-import path from 'node:path'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
+import { jest } from '@jest/globals'
 import makeConsoleMock from 'consolemock'
 
 import { loadConfig } from '../../lib/loadConfig.js'
 
-/** Unfortunately necessary due to non-ESM tests. */
-jest.mock('../../lib/resolveConfig.js', () => ({
-  resolveConfig: (configPath) => {
-    try {
-      return require.resolve(configPath)
-    } catch {
-      return configPath
-    }
-  },
-}))
-
-/**
- * This converts paths into `file://` urls, but this doesn't
- * work with `import()` when using babel + jest.
- */
-jest.mock('node:url', () => ({
-  pathToFileURL: (path) => path,
-}))
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 describe('loadConfig', () => {
   const logger = makeConsoleMock()
@@ -60,39 +46,22 @@ describe('loadConfig', () => {
     `)
   })
 
-  it('should load CommonJS config file from absolute path', async () => {
+  it('should load CommonJS config from absolute .cjs file', async () => {
     expect.assertions(1)
 
     const { config } = await loadConfig(
-      { configPath: path.join(__dirname, '__mocks__', 'advanced-config.js') },
+      { configPath: path.join(__dirname, '__mocks__', 'my-config.cjs') },
       logger
     )
 
     expect(config).toMatchInlineSnapshot(`
       Object {
-        "*.css": [Function],
-        "*.js": [Function],
+        "*": "mytask",
       }
     `)
   })
 
-  it('should load CommonJS config file from relative path', async () => {
-    expect.assertions(1)
-
-    const { config } = await loadConfig(
-      { configPath: path.join('test', 'unit', '__mocks__', 'advanced-config.js') },
-      logger
-    )
-
-    expect(config).toMatchInlineSnapshot(`
-      Object {
-        "*.css": [Function],
-        "*.js": [Function],
-      }
-    `)
-  })
-
-  it('should load CommonJS config file from .cjs file', async () => {
+  it('should load CommonJS config from relative .cjs file', async () => {
     expect.assertions(1)
 
     const { config } = await loadConfig(

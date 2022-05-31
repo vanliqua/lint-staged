@@ -1,12 +1,8 @@
-import { execa } from 'execa'
+import { getMockExeca } from './__utils__/getMockExeca.js'
 
-import { makeCmdTasks } from '../../lib/makeCmdTasks.js'
+const { execa } = await getMockExeca()
 
-import { mockExecaReturnValue } from './__utils__/mockExecaReturnValue.js'
-
-jest.mock('execa', () => ({
-  execa: jest.fn(() => mockExecaReturnValue()),
-}))
+const { makeCmdTasks } = await import('../../lib/makeCmdTasks.js')
 
 describe('makeCmdTasks', () => {
   const gitDir = process.cwd()
@@ -133,6 +129,8 @@ describe('makeCmdTasks', () => {
 
     const res = await makeCmdTasks({ commands: () => longString, gitDir, files: ['test.js'] })
     expect(res.length).toBe(1)
+
+    // 80 characters wide
     expect(res[0].title).toMatchInlineSnapshot(
       `"0123456789101112131415161718192021222324252627282930313233343536373839404142434…"`
     )

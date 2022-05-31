@@ -1,39 +1,28 @@
-import path from 'node:path'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-import { Listr } from 'listr2'
+import { jest } from '@jest/globals'
 import makeConsoleMock from 'consolemock'
 
-import lintStaged from '../../lib/index.js'
+import { getMockListr2 } from './__utils__/getMockListr2.js'
 
-import { mockExecaReturnValue } from './__utils__/mockExecaReturnValue.js'
+const { Listr } = await getMockListr2()
 
-jest.mock('execa', () => ({
-  execa: jest.fn(() => mockExecaReturnValue()),
-}))
-
-jest.mock('listr2')
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const MOCK_CONFIG_FILE = path.join(__dirname, '__mocks__', 'my-config.json')
 const MOCK_STAGED_FILE = path.resolve(__dirname, '__mocks__', 'sample.js')
 
-jest.mock('../../lib/getStagedFiles.js', () => ({
-  getStagedFiles: async () => [MOCK_STAGED_FILE],
+jest.unstable_mockModule('../../lib/getStagedFiles.js', () => ({
+  getStagedFiles: jest.fn(async () => [MOCK_STAGED_FILE]),
 }))
 
-jest.mock('../../lib/resolveConfig.js', () => ({
-  /** Unfortunately necessary due to non-ESM tests. */
-  resolveConfig: (configPath) => {
-    try {
-      return require.resolve(configPath)
-    } catch {
-      return configPath
-    }
-  },
+jest.unstable_mockModule('../../lib/resolveGitRepo.js', () => ({
+  resolveGitRepo: jest.fn(async () => ({ gitDir: 'foo', gitConfigDir: 'bar' })),
 }))
 
-jest.mock('../../lib/resolveGitRepo.js', () => ({
-  resolveGitRepo: async () => ({ gitDir: 'foo', gitConfigDir: 'bar' }),
-}))
+const { default: lintStaged } = await import('../../lib/index.js')
 
 describe('lintStaged', () => {
   afterEach(() => {
@@ -52,7 +41,7 @@ describe('lintStaged', () => {
           "hasPartiallyStagedFiles": null,
           "output": Array [],
           "quiet": true,
-          "shouldBackup": true,
+          "shouldBackup": false,
         },
         "exitOnError": false,
         "nonTTYRenderer": "silent",
@@ -79,7 +68,7 @@ describe('lintStaged', () => {
           "hasPartiallyStagedFiles": null,
           "output": Array [],
           "quiet": false,
-          "shouldBackup": true,
+          "shouldBackup": false,
         },
         "exitOnError": false,
         "nonTTYRenderer": "verbose",
@@ -90,18 +79,15 @@ describe('lintStaged', () => {
   })
 
   it('should catch errors from js function config', async () => {
-    const logger = makeConsoleMock()
     const config = {
       '*': () => {
         throw new Error('failed config')
       },
     }
 
-    expect.assertions(2)
-    await expect(lintStaged({ config }, logger)).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"failed config"`
-    )
-
-    expect(logger.printHistory()).toMatchInlineSnapshot(`""`)
+    expect.assertions(1)
+    await expect(
+      lintStaged({ config }, makeConsoleMock())
+    ).rejects.toThrowErrorMatchingInlineSnapshot(`"failed config"`)
   })
 })
